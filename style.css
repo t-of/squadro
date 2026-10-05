@@ -1,5 +1,5 @@
 :root {
-  --bg: #1c2b3a;
+  --bg: #2d2a26;
   --fg: #eceef3;
   --muted: #9aa0ab;
   --accent: #ffd35c;
@@ -21,7 +21,7 @@ button { font: inherit; color: inherit; }
 
 /* 画面の端に置くものはセーフエリアの分だけ内側に。高さは 100vh ではなく 100dvh */
 .app {
-  min-height: 100dvh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   padding:
@@ -43,6 +43,7 @@ button { font: inherit; color: inherit; }
 }
 .stage {
   flex: 1;
+  min-height: 0;
   position: relative;
   display: grid;
   place-items: center;
@@ -59,75 +60,39 @@ button { font: inherit; color: inherit; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
+  max-width: 340px;
 }
 .screen[hidden] { display: none; }
+/* 対局中は盤を画面いっぱいに広げる */
+.screen--game { height: 100%; min-height: 0; max-width: none; gap: 6px; }
 
 .title { margin: 0; font-size: 28px; letter-spacing: 0.02em; }
 .sub { margin: 0; color: var(--muted); font-size: 14px; text-align: center; }
+.hint { margin: 0; font-size: 13px; color: var(--muted); text-align: center; }
 
 .strength { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .strength__label { font-size: 13px; color: var(--muted); }
 .strength__opts { display: flex; gap: 14px; font-size: 14px; }
 .strength__opts label { display: flex; align-items: center; gap: 4px; }
 
-.big {
-  width: min(84vw, 320px);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--fg);
-  border-radius: 14px;
-  padding: 14px;
-  font-size: 16px;
-  cursor: pointer;
-}
-.big:active { background: rgba(255, 255, 255, 0.14); }
+.pill--big { padding: 12px 20px; font-size: 15px; width: 100%; max-width: 260px; }
 
 .info {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: min(92vw, 420px);
+  width: 100%;
+  max-width: 420px;
   font-size: 13px;
   gap: 8px;
 }
 .info__score b { color: var(--accent); }
 .info__turn { color: var(--muted); }
 
-/* 盤: 7x7。内側 5x5 が交差点、外周が出発・折り返しの縁（速さの数字を表示） */
-.board {
-  width: min(92vw, 420px);
-  aspect-ratio: 1;
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: repeat(7, 1fr);
-  gap: 2px;
-}
-.cell {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 4px;
-  font-size: 12px;
-  color: var(--muted);
-}
-.cell.inner { background: rgba(255, 255, 255, 0.07); }
-.cell.edge { background: rgba(255, 255, 255, 0.05); }
-
-.piece {
-  position: absolute;
-  inset: 10%;
-  border-radius: 50%;
-  border: none;
-  padding: 0;
-  cursor: default;
-}
-.piece--a { background: var(--accent); }
-.piece--b { background: #ff6b6b; }
-.piece.movable { box-shadow: 0 0 0 3px rgba(120, 220, 140, 0.9); cursor: pointer; }
+.board3d { width: 100%; flex: 1; min-height: 200px; }
+.board3d__canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
 
 .screen.overlay {
   position: absolute;

@@ -8,8 +8,8 @@
 // 終わったら元に戻す（doMove / undoMove）。ロジックは rules.js の applyMove と完全に一致させてある
 // （ai.bench.mjs でランダム局面を使って両方の結果が一致することを確かめている）。
 
-const FWD = [1, 3, 2, 3, 1];
-const RET = [3, 1, 2, 1, 3];
+const AI_FWD = [1, 3, 2, 3, 1];
+const AI_RET = [3, 1, 2, 1, 3];
 const WIN = 1000000;
 
 function cellIndex(player, lane, p) {
@@ -57,7 +57,7 @@ function doMove(fs, lane) {
   const oppArr = opp === 0 ? fs.a : fs.b;
   const p = self[lane];
   const boundary = p < 6 ? 6 : 12;
-  const speed = (p < 6 ? FWD : RET)[lane];
+  const speed = (p < 6 ? AI_FWD : AI_RET)[lane];
 
   let cur = p;
   let stepsLeft = speed;
@@ -114,8 +114,8 @@ function undoMove(fs, u) {
 // 駒 1 つがゴール（p=12）まで必要な手数のおおよその見積もり（速さで割った距離）。
 function estRemaining(lane, p) {
   if (p === 12) return 0;
-  if (p < 6) return (6 - p) / FWD[lane] + 6 / RET[lane];
-  return (12 - p) / RET[lane];
+  if (p < 6) return (6 - p) / AI_FWD[lane] + 6 / AI_RET[lane];
+  return (12 - p) / AI_RET[lane];
 }
 
 // 次の一歩で相手の駒に重なる（跳び越えられる）駒の数。厳密な多重跳びは数えない簡易判定。
@@ -264,7 +264,7 @@ function search(state, opts) {
   return bestMove;
 }
 
-const api = { FWD, RET, search, cellIndex, toFast, doMove, undoMove, legalMovesFast, evaluate, encodeKey };
+const aiApi = { FWD: AI_FWD, RET: AI_RET, search, cellIndex, toFast, doMove, undoMove, legalMovesFast, evaluate, encodeKey };
 
-if (typeof module !== 'undefined' && module.exports) module.exports = api;
-else if (typeof self !== 'undefined') self.SquadroAI = api;
+if (typeof module !== 'undefined' && module.exports) module.exports = aiApi;
+else if (typeof self !== 'undefined') self.SquadroAI = aiApi;

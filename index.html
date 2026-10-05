@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#1c2b3a">
+  <meta name="theme-color" content="#2d2a26">
   <meta name="description" content="行きと帰りで速さが違う5つのコマを操り、先に4つ上がらせたら勝ちの盤ゲーム。">
   <title>squadro — 5人のコマで走る陣取り</title>
 
@@ -52,27 +52,27 @@
             <label><input type="radio" name="strength" value="max" checked>最強</label>
           </div>
         </div>
-        <button class="big" data-start="cpu-a">CPU と対戦（先手）</button>
-        <button class="big" data-start="cpu-b">CPU と対戦（後手）</button>
-        <button class="big" data-start="pvp">2人で対戦（同じ端末）</button>
+        <button class="pill pill--big" data-start="cpu-a">CPU と対戦（先手）</button>
+        <button class="pill pill--big" data-start="cpu-b">CPU と対戦（後手）</button>
+        <button class="pill pill--big" data-start="pvp">2人で対戦（同じ端末）</button>
       </div>
 
-      <div id="game" class="screen" hidden>
+      <div id="game" class="screen screen--game" hidden>
         <div class="info">
           <span class="info__score">黄 上がり <b id="scoreA">0</b>/4</span>
           <span class="info__turn" id="turnLabel"></span>
           <span class="info__score">赤 上がり <b id="scoreB">0</b>/4</span>
         </div>
 
-        <div class="board" id="board"></div>
+        <div class="board3d" id="board3d"></div>
 
-        <p class="sub">自分のコマをタップして進める</p>
+        <p class="hint">ドラッグで回す・ピンチで寄る・自分のコマをタップして進める</p>
       </div>
 
       <div id="result" class="screen overlay" hidden>
         <h2 id="resultText"></h2>
-        <button class="big" id="againBtn">もう一度</button>
-        <button class="big" id="titleBtn">タイトルへ</button>
+        <button class="pill pill--big" id="againBtn">もう一度</button>
+        <button class="pill" id="titleBtn">タイトルへ</button>
       </div>
     </section>
 
@@ -84,6 +84,14 @@
   <script src="./webapp-kit/webapp-kit.js"></script>
   <script src="./rules.js"></script>
   <script src="./ai.js"></script>
-  <script src="./main.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="./main.js"></script>
 </body>
 </html>
