@@ -333,3 +333,8 @@ document.getElementById('titleBtn').addEventListener('click', () => {
   gameEl.hidden = true;
   startEl.hidden = false;
 });
+
+// 遊び方
+const helpEl = document.getElementById('help');
+document.getElementById('helpBtn').addEventListener('click', () => helpEl.showModal());
+document.getElementById('helpClose').addEventListener('click', () => helpEl.close());
