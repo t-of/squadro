@@ -47,6 +47,7 @@ let mode = 'home';    // 'home'（ホームの飾りの盤） | 'pvp' | 'cpu' | 
 let cpuPlayer = null; // mode === 'cpu' のとき、CPU が持つ側 'a' | 'b'
 let strength = load('strength', 'max'); // 'weak' | 'normal' | 'max'
 let thinking = false;
+let animating = false; // 駒が動いている間は次の手を受け付けない
 let gameId = 0;       // ホームへ戻る・やり直すたびに増やし、待っている CPU の手を捨てる
 
 for (const r of document.querySelectorAll('input[name="strength"]')) {
@@ -83,6 +84,7 @@ function cancelCpu() {
   gameId++;
   if (thinking && aiWorker) { aiWorker.terminate(); aiWorker = null; }
   thinking = false;
+  animating = false;
 }
 
 function startGame(kind) {
@@ -121,17 +123,27 @@ async function maybeCpuTurn() {
   const [lane] = await Promise.all([requestCpuMove(state, strength), mode === 'cvc' ? new Promise((r) => setTimeout(r, 600)) : null]);
   if (id !== gameId) return;
   thinking = false;
-  state = SquadroRules.applyMove(state, lane);
-  render();
+  if (!(await playMove(lane))) return;
   if (!state.winner) maybeCpuTurn();
 }
 
-function tryMove(player, lane) {
-  if (state.winner || thinking || !isHumanTurn() || player !== state.turn) return;
+async function tryMove(player, lane) {
+  if (state.winner || thinking || animating || !isHumanTurn() || player !== state.turn) return;
   if (!SquadroRules.legalMoves(state).includes(lane)) return;
-  state = SquadroRules.applyMove(state, lane);
+  if (await playMove(lane)) maybeCpuTurn();
+}
+
+// 1 手を動きつきで進める。途中でホームへ戻る・やり直したら false
+async function playMove(lane) {
+  const id = gameId;
+  const next = SquadroRules.applyMove(state, lane);
+  animating = true;
+  await animateMove(state, lane, next, id);
+  if (id !== gameId) return false;
+  animating = false;
+  state = next;
   render();
-  maybeCpuTurn();
+  return true;
 }
 
 // ---- 3D の木の盤（three.js）。ドラッグで回す、ピンチで寄る ----
@@ -286,13 +298,13 @@ function highlightRing() {
 
 let pieceGroup = new THREE.Group();
 scene.add(pieceGroup);
-function syncScene() {
+function syncScene(s = state, showLegal = true) {
   scene.remove(pieceGroup);
   pieceGroup = new THREE.Group();
-  const legal = isHumanTurn() ? SquadroRules.legalMoves(state) : [];
+  const legal = showLegal && isHumanTurn() ? SquadroRules.legalMoves(s) : [];
   for (const player of ['a', 'b']) {
     for (let lane = 0; lane < 5; lane++) {
-      const p = state[player][lane];
+      const p = s[player][lane];
       const pos = SquadroRules.cellOf(player, lane, p);
       if (!pos) continue; // 上がった駒は盤に出さない
       const { x, z } = cellPos(pos.row, pos.col);
@@ -300,7 +312,7 @@ function syncScene() {
       m.position.set(x, 0, z);
       m.traverse((o) => { o.userData.player = player; o.userData.lane = lane; });
       pieceGroup.add(m);
-      if (player === state.turn && legal.includes(lane)) {
+      if (player === s.turn && legal.includes(lane)) {
         const ring = highlightRing();
         ring.position.x = x; ring.position.z = z;
         pieceGroup.add(ring);
@@ -309,6 +321,68 @@ function syncScene() {
   }
   scene.add(pieceGroup);
   draw();
+}
+
+// ---- 駒の動き ----
+// 動いた駒はマスごとに跳ね、相手の駒はひと跳びで越える。越えられた駒はあとで縁へ戻る。
+// 折り返しの縁ではくるりと返り、上がった駒は縮んで消える。
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+function tween(ms, id, fn) {
+  if (reduceMotion.matches) ms = 0;
+  return new Promise((done) => {
+    const t0 = performance.now();
+    const step = (now) => {
+      if (id !== gameId) return done();
+      const t = ms ? Math.min(1, (now - t0) / ms) : 1;
+      fn(t);
+      draw();
+      if (t < 1) requestAnimationFrame(step); else done();
+    };
+    requestAnimationFrame(step);
+  });
+}
+const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+// 上がり（p === 12）は出発の縁の位置で消える
+const posOf = (player, lane, p) => { const c = SquadroRules.cellOf(player, lane, p === 12 ? 0 : p); return cellPos(c.row, c.col); };
+const findPiece = (player, lane) => pieceGroup.children.find((m) => m.userData.player === player && m.userData.lane === lane);
+
+function hop(mesh, from, to, h, ms, id, spin = 0) {
+  return tween(ms, id, (t) => {
+    const k = ease(t);
+    mesh.position.set(from.x + (to.x - from.x) * k, h * 4 * t * (1 - t), from.z + (to.z - from.z) * k);
+    mesh.rotation.x = spin * k;
+  });
+}
+
+async function animateMove(prev, lane, next, id) {
+  const player = prev.turn, opp = SquadroRules.other(player);
+  syncScene(prev, false);
+  const mover = findPiece(player, lane);
+  const from = prev[player][lane], to = next[player][lane];
+  const occupied = (p) => {
+    if (p === 12) return false;
+    const c = SquadroRules.cellOf(player, lane, p);
+    return prev[opp].some((op, j) => { const o = SquadroRules.cellOf(opp, j, op); return o && o.row === c.row && o.col === c.col; });
+  };
+  // 着地するマスごとに 1 回跳ぶ。相手の駒がいるマスはまとめて越える
+  let at = from;
+  for (let p = from + 1; p <= to; p++) {
+    if (occupied(p) && p < to) continue;
+    const jumped = p - at - 1;
+    const spin = p === 6 ? Math.PI * 2 : 0; // 折り返しでくるりと返る
+    await hop(mover, posOf(player, lane, at), posOf(player, lane, p), 0.22 + 0.45 * jumped + (spin ? 0.3 : 0), 170 + 90 * (p - at) + (spin ? 120 : 0), id, spin);
+    at = p;
+  }
+  // 越えられた駒を縁へ戻す
+  const bumped = [0, 1, 2, 3, 4].filter((j) => next[opp][j] !== prev[opp][j]);
+  if (bumped.length) {
+    const moves = bumped.map((j) => [findPiece(opp, j), posOf(opp, j, prev[opp][j]), posOf(opp, j, next[opp][j])]);
+    await tween(380, id, (t) => {
+      const k = ease(t);
+      for (const [m, a, b] of moves) m.position.set(a.x + (b.x - a.x) * k, 0.35 * 4 * t * (1 - t), a.z + (b.z - a.z) * k);
+    });
+  }
+  if (to === 12) await tween(260, id, (t) => { mover.scale.setScalar(1 - t); mover.position.y = 0.3 * t; });
 }
 
 function draw() { renderer.render(scene, camera); }
