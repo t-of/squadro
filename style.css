@@ -69,8 +69,8 @@ button { font: inherit; color: inherit; }
 .screen--game { height: 100%; min-height: 0; max-width: none; gap: 6px; }
 
 /* ホームは盤（3D）を真ん中に出し、残りの高さを盤に回す */
-.screen--home { height: 100%; min-height: 0; gap: 8px; }
-.board3d--home { min-height: 160px; max-width: 340px; }
+.screen--home { height: 100%; min-height: 0; max-width: none; gap: 8px; }
+.board3d--home { min-height: 160px; }
 
 .title { margin: 0; font-size: 28px; letter-spacing: 0.02em; }
 .sub { margin: 0; color: var(--muted); font-size: 14px; text-align: center; }
@@ -127,3 +127,30 @@ button { font: inherit; color: inherit; }
 .help figure:last-of-type svg { max-width: none; }
 .help figcaption { font-size: 12px; color: var(--muted); }
 .help .pill--big { display: block; margin: 16px auto 0; }
+
+/* ランプに照らされた机の部屋。上からの暖かい明かりと、四隅の暗がり */
+body {
+  min-height: 100dvh;
+  background-image:
+    radial-gradient(ellipse 80% 55% at 50% 42%, rgba(255, 196, 120, 0.14), transparent 72%),
+    radial-gradient(ellipse 120% 90% at 50% 45%, transparent 50%, rgba(0, 0, 0, 0.5));
+}
+.title h2, h2.title {
+  font-size: 30px;
+  letter-spacing: 0.08em;
+  color: #f2ddb4;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.45), 0 0 18px rgba(255, 190, 110, 0.25);
+}
+/* ホームの大きなボタンは木の札のように */
+.pill--big {
+  background: linear-gradient(#7b5337, #5b3b25);
+  border-color: rgba(255, 220, 170, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 230, 190, 0.22), 0 2px 6px rgba(0, 0, 0, 0.35);
+  color: #f6ead6;
+}
+.pill--big:active { transform: translateY(1px); box-shadow: inset 0 1px 0 rgba(255, 230, 190, 0.15), 0 1px 3px rgba(0, 0, 0, 0.35); }
+/* 天板が 3D の枠で四角く切れて見えないよう、上下のふちをぼかす */
+canvas {
+  -webkit-mask-image: linear-gradient(transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(transparent, #000 7%, #000 93%, transparent);
+}
