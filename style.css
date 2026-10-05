@@ -68,6 +68,10 @@ button { font: inherit; color: inherit; }
 /* 対局中は盤を画面いっぱいに広げる */
 .screen--game { height: 100%; min-height: 0; max-width: none; gap: 6px; }
 
+/* ホームは盤（3D）を真ん中に出し、残りの高さを盤に回す */
+.screen--home { height: 100%; min-height: 0; gap: 8px; }
+.board3d--home { min-height: 160px; max-width: 340px; }
+
 .title { margin: 0; font-size: 28px; letter-spacing: 0.02em; }
 .sub { margin: 0; color: var(--muted); font-size: 14px; text-align: center; }
 .hint { margin: 0; font-size: 13px; color: var(--muted); text-align: center; }

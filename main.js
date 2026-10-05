@@ -35,16 +35,19 @@ const startEl = document.getElementById('start');
 const gameEl = document.getElementById('game');
 const resultEl = document.getElementById('result');
 const board3dEl = document.getElementById('board3d');
+const homeBoardEl = document.getElementById('homeBoard');
+const hintEl = document.getElementById('hint');
 const turnLabelEl = document.getElementById('turnLabel');
 const scoreAEl = document.getElementById('scoreA');
 const scoreBEl = document.getElementById('scoreB');
 const resultTextEl = document.getElementById('resultText');
 
 let state = null;
-let mode = 'pvp';     // 'pvp' | 'cpu'
+let mode = 'home';    // 'home'（ホームの飾りの盤） | 'pvp' | 'cpu' | 'cvc'（CPU 同士）
 let cpuPlayer = null; // mode === 'cpu' のとき、CPU が持つ側 'a' | 'b'
 let strength = load('strength', 'max'); // 'weak' | 'normal' | 'max'
 let thinking = false;
+let gameId = 0;       // ホームへ戻る・やり直すたびに増やし、待っている CPU の手を捨てる
 
 for (const r of document.querySelectorAll('input[name="strength"]')) {
   r.checked = r.value === strength;
@@ -75,10 +78,19 @@ function requestCpuMove(s, level) {
   });
 }
 
+// 考え中の探索を打ち切る。Worker は止めて作り直す（古い答えが次の対局に届かないように）
+function cancelCpu() {
+  gameId++;
+  if (thinking && aiWorker) { aiWorker.terminate(); aiWorker = null; }
+  thinking = false;
+}
+
 function startGame(kind) {
+  cancelCpu();
   state = SquadroRules.createInitialState();
-  if (kind === 'pvp') { mode = 'pvp'; cpuPlayer = null; }
+  if (kind === 'pvp' || kind === 'cvc') { mode = kind; cpuPlayer = null; }
   else { mode = 'cpu'; cpuPlayer = kind === 'cpu-a' ? 'b' : 'a'; }
+  hintEl.textContent = mode === 'cvc' ? 'ドラッグで回す・ピンチで寄る' : 'ドラッグで回す・ピンチで寄る・自分のコマをタップして進める';
   startEl.hidden = true;
   gameEl.hidden = false;
   resultEl.hidden = true;
@@ -87,13 +99,27 @@ function startGame(kind) {
   maybeCpuTurn();
 }
 
-function isHumanTurn() { return mode === 'pvp' || state.turn !== cpuPlayer; }
+function goHome() {
+  cancelCpu();
+  mode = 'home';
+  state = SquadroRules.createInitialState();
+  resultEl.hidden = true;
+  gameEl.hidden = true;
+  startEl.hidden = false;
+  homeBoardEl.appendChild(canvas);
+  render();
+}
+
+function isHumanTurn() { return mode === 'pvp' || (mode === 'cpu' && state.turn !== cpuPlayer); }
 
 async function maybeCpuTurn() {
-  if (state.winner || isHumanTurn()) return;
+  if (mode === 'home' || state.winner || isHumanTurn()) return;
+  const id = gameId;
   thinking = true;
   render();
-  const lane = await requestCpuMove(state, strength);
+  // CPU 同士は目で追えるように、1 手ごとに少し間を置く
+  const [lane] = await Promise.all([requestCpuMove(state, strength), mode === 'cvc' ? new Promise((r) => setTimeout(r, 600)) : null]);
+  if (id !== gameId) return;
   thinking = false;
   state = SquadroRules.applyMove(state, lane);
   render();
@@ -316,9 +342,9 @@ function render() {
   syncScene();
   scoreAEl.textContent = state.a.filter((v) => v === 12).length;
   scoreBEl.textContent = state.b.filter((v) => v === 12).length;
-  turnLabelEl.textContent = thinking ? '考え中…' : (state.turn === 'a' ? '黄の番' : '赤の番');
+  turnLabelEl.textContent = thinking && mode !== 'cvc' ? '考え中…' : (state.turn === 'a' ? '黄の番' : '赤の番');
 
-  if (state.winner) {
+  if (state.winner && mode !== 'home') {
     resultTextEl.textContent = state.winner === 'a' ? '黄の勝ち' : '赤の勝ち';
     resultEl.hidden = false;
   }
@@ -327,12 +353,10 @@ function render() {
 for (const btn of document.querySelectorAll('[data-start]')) {
   btn.addEventListener('click', () => startGame(btn.dataset.start));
 }
-document.getElementById('againBtn').addEventListener('click', () => startGame(mode === 'cpu' ? (cpuPlayer === 'a' ? 'cpu-b' : 'cpu-a') : 'pvp'));
-document.getElementById('titleBtn').addEventListener('click', () => {
-  resultEl.hidden = true;
-  gameEl.hidden = true;
-  startEl.hidden = false;
-});
+document.getElementById('againBtn').addEventListener('click', () => startGame(mode === 'cpu' ? (cpuPlayer === 'a' ? 'cpu-b' : 'cpu-a') : mode));
+document.getElementById('titleBtn').addEventListener('click', goHome);
+document.getElementById('homeBtn').addEventListener('click', goHome);
+goHome();
 
 // 遊び方
 const helpEl = document.getElementById('help');

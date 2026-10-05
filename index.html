@@ -42,9 +42,10 @@
     </header>
 
     <section class="stage" id="stage">
-      <div id="start" class="screen">
+      <div id="start" class="screen screen--home">
         <h2 class="title">squadro</h2>
         <p class="sub">行き帰りで速さが違う5つのコマ。先に4つ上がらせたら勝ち</p>
+        <div class="board3d board3d--home" id="homeBoard"></div>
         <div class="strength" id="strength">
           <span class="strength__label">CPU の強さ</span>
           <div class="strength__opts">
@@ -56,6 +57,7 @@
         <button class="pill pill--big" data-start="cpu-a">CPU と対戦（先手）</button>
         <button class="pill pill--big" data-start="cpu-b">CPU と対戦（後手）</button>
         <button class="pill pill--big" data-start="pvp">2人で対戦（同じ端末）</button>
+        <button class="pill pill--big" data-start="cvc">CPU 同士の対戦を見る</button>
       </div>
 
       <div id="game" class="screen screen--game" hidden>
@@ -67,13 +69,14 @@
 
         <div class="board3d" id="board3d"></div>
 
-        <p class="hint">ドラッグで回す・ピンチで寄る・自分のコマをタップして進める</p>
+        <p class="hint" id="hint">ドラッグで回す・ピンチで寄る・自分のコマをタップして進める</p>
+        <button class="pill" id="homeBtn">ホームへ</button>
       </div>
 
       <div id="result" class="screen overlay" hidden>
         <h2 id="resultText"></h2>
         <button class="pill pill--big" id="againBtn">もう一度</button>
-        <button class="pill" id="titleBtn">タイトルへ</button>
+        <button class="pill" id="titleBtn">ホームへ</button>
       </div>
     </section>
 
