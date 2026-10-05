@@ -41,6 +41,37 @@ const resultTextEl = document.getElementById('resultText');
 let state = null;
 let mode = 'pvp';     // 'pvp' | 'cpu'
 let cpuPlayer = null; // mode === 'cpu' のとき、CPU が持つ側 'a' | 'b'
+let strength = load('strength', 'max'); // 'weak' | 'normal' | 'max'
+let thinking = false;
+
+for (const r of document.querySelectorAll('input[name="strength"]')) {
+  r.checked = r.value === strength;
+  r.addEventListener('change', () => { if (r.checked) { strength = r.value; save('strength', strength); } });
+}
+
+// CPU の探索は Web Worker（ai-worker.js）で行い、画面を固めない。
+// Worker が使えない・応答しないときは、保険としてメインスレッドで浅い探索にする。
+let aiWorker = null;
+function getAiWorker() {
+  if (aiWorker !== null) return aiWorker;
+  try { aiWorker = new Worker('./ai-worker.js'); } catch { aiWorker = false; }
+  return aiWorker;
+}
+
+function requestCpuMove(s, level) {
+  if (level === 'weak') return Promise.resolve(SquadroRules.chooseMove(s));
+  const opts = level === 'normal' ? { depth: 3 } : { timeMs: 1500 };
+  return new Promise((resolve) => {
+    let done = false;
+    const fallback = () => { if (!done) { done = true; resolve(SquadroAI.search(s, { depth: 2 })); } };
+    const w = getAiWorker();
+    if (!w) { fallback(); return; }
+    const timer = setTimeout(fallback, (opts.timeMs || 3000) + 1500);
+    w.onmessage = (e) => { if (!done) { done = true; clearTimeout(timer); resolve(e.data.lane); } };
+    w.onerror = () => { clearTimeout(timer); fallback(); };
+    w.postMessage({ state: s, opts });
+  });
+}
 
 function startGame(kind) {
   state = SquadroRules.createInitialState();
@@ -55,18 +86,19 @@ function startGame(kind) {
 
 function isHumanTurn() { return mode === 'pvp' || state.turn !== cpuPlayer; }
 
-function maybeCpuTurn() {
+async function maybeCpuTurn() {
   if (state.winner || isHumanTurn()) return;
-  setTimeout(() => {
-    const lane = SquadroRules.chooseMove(state);
-    state = SquadroRules.applyMove(state, lane);
-    render();
-    if (!state.winner) maybeCpuTurn();
-  }, 350);
+  thinking = true;
+  render();
+  const lane = await requestCpuMove(state, strength);
+  thinking = false;
+  state = SquadroRules.applyMove(state, lane);
+  render();
+  if (!state.winner) maybeCpuTurn();
 }
 
 function tryMove(player, lane) {
-  if (state.winner || !isHumanTurn() || player !== state.turn) return;
+  if (state.winner || thinking || !isHumanTurn() || player !== state.turn) return;
   if (!SquadroRules.legalMoves(state).includes(lane)) return;
   state = SquadroRules.applyMove(state, lane);
   render();
@@ -108,7 +140,7 @@ function render() {
 
   scoreAEl.textContent = state.a.filter((v) => v === 12).length;
   scoreBEl.textContent = state.b.filter((v) => v === 12).length;
-  turnLabelEl.textContent = state.turn === 'a' ? '黄の番' : '赤の番';
+  turnLabelEl.textContent = thinking ? '考え中…' : (state.turn === 'a' ? '黄の番' : '赤の番');
 
   if (state.winner) {
     resultTextEl.textContent = state.winner === 'a' ? '黄の勝ち' : '赤の勝ち';

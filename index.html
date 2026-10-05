@@ -44,6 +44,14 @@
       <div id="start" class="screen">
         <h2 class="title">squadro</h2>
         <p class="sub">行き帰りで速さが違う5つのコマ。先に4つ上がらせたら勝ち</p>
+        <div class="strength" id="strength">
+          <span class="strength__label">CPU の強さ</span>
+          <div class="strength__opts">
+            <label><input type="radio" name="strength" value="weak">よわい</label>
+            <label><input type="radio" name="strength" value="normal">ふつう</label>
+            <label><input type="radio" name="strength" value="max" checked>最強</label>
+          </div>
+        </div>
         <button class="big" data-start="cpu-a">CPU と対戦（先手）</button>
         <button class="big" data-start="cpu-b">CPU と対戦（後手）</button>
         <button class="big" data-start="pvp">2人で対戦（同じ端末）</button>
@@ -75,6 +83,7 @@
 
   <script src="./webapp-kit/webapp-kit.js"></script>
   <script src="./rules.js"></script>
+  <script src="./ai.js"></script>
   <script src="./main.js"></script>
 </body>
 </html>

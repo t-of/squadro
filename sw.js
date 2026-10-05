@@ -18,6 +18,8 @@ const SHELL = [
   './index.html',
   './style.css',
   './rules.js',
+  './ai.js',
+  './ai-worker.js',
   './main.js',
   './manifest.webmanifest',
   './webapp-kit/webapp-kit.css',
