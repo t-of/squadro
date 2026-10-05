@@ -209,6 +209,8 @@ const board = new THREE.Mesh(new RoundedBoxGeometry(CELL * 7 + 0.3, 0.36, CELL *
 board.position.y = -0.18;
 scene.add(board);
 
+const DESK = new THREE.Group(); // 机の天板と盤の影。ホームでは消す
+scene.add(DESK);
 // ---- 机の天板。盤の下に木の板を敷き、地平線まで続ける ----
 {
   const box = new THREE.Box3().setFromObject(board);
@@ -245,7 +247,7 @@ scene.add(board);
   table.rotation.x = -Math.PI / 2;
   table.position.y = box.min.y - 0.01;
   table.renderOrder = -1;
-  scene.add(table);
+  DESK.add(table);
   // 盤の落とす影
   const sc = document.createElement('canvas');
   sc.width = sc.height = 256;
@@ -257,24 +259,23 @@ scene.add(board);
     new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, depthWrite: false }));
   shadow.rotation.x = -Math.PI / 2;
   shadow.position.y = box.min.y - 0.005;
-  scene.add(shadow);
+  DESK.add(shadow);
 }
 
-// ホーム画面では盤をゆっくり回して見せる。対局に入ったら最初の向きに戻す（動きを控える設定なら回さない）
+// ホーム画面では盤を斜め上からの向きで止め、机を消して宙に浮かべる。対局に入ったら机を戻す
 {
   const HOME_CAM = camera.position.clone();
-  const still = matchMedia('(prefers-reduced-motion: reduce)');
   let wasHome = false;
-  controls.autoRotateSpeed = 0.6;
-  const spin = () => {
+  const watch = () => {
     const home = !!canvas.offsetParent && !!canvas.closest('.title, #homeBoard');
-    controls.autoRotate = home && !still.matches;
-    if (controls.autoRotate) controls.update(); // change → draw
-    else if (wasHome && !home) { camera.position.copy(HOME_CAM); controls.update(); }
-    wasHome = home;
-    requestAnimationFrame(spin);
+    if (home !== wasHome) {
+      DESK.visible = controls.enabled = !home;
+      camera.position.copy(HOME_CAM); controls.update(); draw();
+      wasHome = home;
+    }
+    requestAnimationFrame(watch);
   };
-  requestAnimationFrame(spin);
+  requestAnimationFrame(watch);
 }
 
 // 速さの数字を刻んだ円盤（縁の 20 マス）。背景は木の色に合わせ、数字はクリーム色で焼く
