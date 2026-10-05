@@ -1,0 +1,19 @@
+{
+  "id": "./",
+  "name": "squadro — 5人のコマで走る陣取り",
+  "short_name": "squadro",
+  "description": "行きと帰りで速さが違う5つのコマを操り、先に4つ上がらせたら勝ちの盤ゲーム。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1c2b3a",
+  "theme_color": "#1c2b3a",
+  "lang": "ja",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
